@@ -1,49 +1,86 @@
-// TODO: Change to MinHeap implementation
+// h(n) = n에서 목표 지점까지의 Heuristic 비용 (간편 추론된 비용)
+// g(n) = 시작 위치에서 n까지 든 비용
+// f(n) = g(n) + h(n)
+
+/** @typedef {{x: number, y: number}} Position  */
+/** @typedef {{f: number, pos: Position}} OpenSetNode */
+/** @typedef {PriorityQueue<OpenSetNode>} OpenSet */
+
+/**
+ * @template T
+ */
 class PriorityQueue {
-    constructor() {
+    /**
+     * @param {(a: T, b: T) => number} comp
+     */
+    constructor(comp) {
+        /** @type {T[]} */
         this.queue = [];
+        this.comp = comp;
     }
 
+    /**
+     * @param {T} item
+     */
     push(item) {
         this.queue.push(item);
-        this.queue.sort((a, b) => a.totalCost - b.totalCost);
+        this.queue.sort(this.comp);
     }
 
+    /**
+     * @returns {T}
+     */
     pop() {
         return this.queue.shift();
     }
 
-    get top() {
-        return this.queue[0];
-    }
-
+    /**
+     * @returns {boolean}
+     */
     get isEmpty() {
         return this.queue.length === 0;
     }
+
+    /**
+     * @returns {number}
+     */
+    get size() {
+        return this.queue.length;
+    }
 }
 
-const GRID_WIDTH = 50;
-const GRID_HEIGHT = 50;
+const GRID_WIDTH = 30,
+    GRID_HEIGHT = 30;
 
-const grid = [];
-const table = document.createElement("table");
+const dx = [-1, 1, 0, 0],
+    dy = [0, 0, -1, 1];
 
-for (let i = 0; i < GRID_HEIGHT; i++) {
-    grid.push(
-        Array.from({ length: GRID_WIDTH }, () => ({
-            domElement: document.createElement("td"),
-            isWall: false,
-            cost: 0,
-            hCost: 0, // heuristic cost (현재 노드에서 목표 노드까지 예상되는 비용(거리))
-            totalCost: 0, // cost + heuristic cost
-            parent: null,
-        })),
+// 근처 위치에서 특정 위치로 가는 데 소모되는 비용
+const cost = Array.from({ length: GRID_HEIGHT }, () =>
+    Array.from(
+        { length: GRID_WIDTH },
+        () => Math.floor(Math.random() * 20) + 1,
+    ),
+);
+
+/**
+ * @param {Position} start
+ * @param {Position} goal
+ * @returns {{path: Position[], cost: number}}
+ */
+function aStar(start, goal) {
+    // 시작 위치에서 특정 위치로 가는 데 가장 비용이 적게 드는 경로의 비용 기록 (Closed set)
+    const g = Array.from({ length: GRID_HEIGHT }, () =>
+        new Array(GRID_WIDTH).fill(1e9),
     );
+    g[start.y][start.x] = 0;
 
-    const tableRow = document.createElement("tr");
+    /** @type {OpenSet} */
+    // 비용이 계산 될 노드들 (f(n) 기준으로 정렬)
+    const openSet = new PriorityQueue((a, b) => a.f - b.f);
+    openSet.push({ f: 0, pos: start });
 
-    for (let j = 0; j < GRID_WIDTH; j++)
-        tableRow.appendChild(grid[i][j].domElement);
+    while (!openSet.isEmpty) {}
 
-    table.appendChild(tableRow);
+    return { path: [], cost: 0 };
 }
