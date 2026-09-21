@@ -49,6 +49,10 @@ class PriorityQueue {
     }
 }
 
+function manhattan(a, b) {
+    return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+}
+
 const GRID_WIDTH = 30,
     GRID_HEIGHT = 30;
 
@@ -80,7 +84,55 @@ function aStar(start, goal) {
     const openSet = new PriorityQueue((a, b) => a.f - b.f);
     openSet.push({ f: 0, pos: start });
 
-    while (!openSet.isEmpty) {}
+    const parent = new Map();
+    const getKey = (pos) => pos.x * 10000 + pos.y;
+    const getPath = (pos) => {
+        const path = [];
+        let curr = pos,
+            currKey = getKey(curr);
 
-    return { path: [], cost: 0 };
+        while (true) {
+            path.push(curr);
+            curr = parent.get(currKey);
+
+            if (!curr) break;
+
+            currKey = getKey(curr);
+        }
+
+        return path.toReversed();
+    };
+
+    while (!openSet.isEmpty) {
+        const curr = openSet.pop();
+
+        if (curr.pos.x === goal.x && curr.pos.y === goal.y)
+            return { path: getPath(curr.pos), cost: g[goal.y][goal.x] };
+
+        for (let i = 0; i < 4; i++) {
+            const nx = curr.pos.x + dx[i],
+                ny = curr.pos.y + dy[i];
+
+            if (nx < 0 || ny < 0 || nx >= GRID_WIDTH || ny >= GRID_HEIGHT)
+                continue;
+
+            const gNext = g[curr.pos.y][curr.pos.x] + cost[ny][nx];
+
+            if (gNext < g[ny][nx]) {
+                g[ny][nx] = gNext;
+                parent.set(getKey({ x: nx, y: ny }), curr.pos);
+
+                openSet.push({
+                    f: gNext + manhattan({ x: nx, y: ny }, goal),
+                    pos: { x: nx, y: ny },
+                });
+            }
+        }
+    }
+
+    return { path: null, cost: -1 };
 }
+
+export default {
+    aStar,
+};
