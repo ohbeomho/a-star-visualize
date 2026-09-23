@@ -133,6 +133,32 @@ function aStar(start, goal) {
     return { path: null, cost: -1 };
 }
 
+const table = document.querySelector("table");
+const grid = Array.from({ length: GRID_HEIGHT }, () => new Array(GRID_WIDTH));
+
+for (let i = 0; i < GRID_HEIGHT; i++) {
+    const row = document.createElement("tr");
+
+    for (let j = 0; j < GRID_WIDTH; j++) {
+        const cell = document.createElement("td");
+        cell.textContent = String(cost[i][j]);
+        row.appendChild(cell);
+
+        grid[i][j] = cell;
+    }
+
+    table.appendChild(row);
+}
+
+const { path, minCost } = aStar(
+    { x: 0, y: 0 },
+    { x: GRID_WIDTH - 1, y: GRID_HEIGHT - 1 },
+);
+for (let pos of path) {
+    grid[pos.y][pos.x].classList.add("path");
+}
+
+// For testing
 export default {
     aStar,
 };
