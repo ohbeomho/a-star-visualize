@@ -59,6 +59,9 @@ const GRID_WIDTH = 30,
 const dx = [-1, 1, 0, 0],
     dy = [0, 0, -1, 1];
 
+const start = { x: 0, y: 0 },
+    goal = { x: GRID_WIDTH - 1, y: GRID_HEIGHT - 1 };
+
 // 근처 위치에서 특정 위치로 가는 데 소모되는 비용
 const cost = Array.from({ length: GRID_HEIGHT }, () =>
     Array.from(
@@ -74,6 +77,7 @@ const cost = Array.from({ length: GRID_HEIGHT }, () =>
  */
 function aStar(start, goal) {
     // 시작 위치에서 특정 위치로 가는 데 가장 비용이 적게 드는 경로의 비용 기록 (Closed set)
+    /** @type {number[][]} */
     const g = Array.from({ length: GRID_HEIGHT }, () =>
         new Array(GRID_WIDTH).fill(1e9),
     );
@@ -135,6 +139,18 @@ function aStar(start, goal) {
 
 const table = document.querySelector("table");
 const grid = Array.from({ length: GRID_HEIGHT }, () => new Array(GRID_WIDTH));
+const runButton = document.querySelector("#run"),
+    resetButton = document.querySelector("#reset");
+
+const buttons = [runButton, resetButton];
+
+function disableButtons() {
+    buttons.forEach((button) => (button.disabled = true));
+}
+
+function enableButtons() {
+    buttons.forEach((button) => (button.disabled = false));
+}
 
 for (let i = 0; i < GRID_HEIGHT; i++) {
     const row = document.createElement("tr");
@@ -150,13 +166,29 @@ for (let i = 0; i < GRID_HEIGHT; i++) {
     table.appendChild(row);
 }
 
-const { path, minCost } = aStar(
-    { x: 0, y: 0 },
-    { x: GRID_WIDTH - 1, y: GRID_HEIGHT - 1 },
-);
-for (let pos of path) {
-    grid[pos.y][pos.x].classList.add("path");
-}
+grid[start.y][start.x].classList.add("start");
+grid[goal.y][goal.x].classList.add("goal");
+
+runButton.addEventListener("click", () => {
+    const { path, cost: minCost } = aStar(start, goal);
+
+    document.querySelector("#cost").textContent = String(minCost);
+
+    disableButtons();
+
+    for (let i = 0; i < path.length; i++)
+        setTimeout(
+            () => grid[path[i].y][path[i].x].classList.add("path"),
+            (i + 1) * 20,
+        );
+
+    setTimeout(enableButtons, (path.length + 1) * 20);
+});
+resetButton.addEventListener("click", () => {
+    for (let i = 0; i < GRID_HEIGHT; i++)
+        for (let j = 0; j < GRID_WIDTH; j++)
+            grid[i][j].classList.remove("path");
+});
 
 // For testing
 export default {
