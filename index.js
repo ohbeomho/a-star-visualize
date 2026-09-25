@@ -63,12 +63,13 @@ const start = { x: 0, y: 0 },
     goal = { x: GRID_WIDTH - 1, y: GRID_HEIGHT - 1 };
 
 // 근처 위치에서 특정 위치로 가는 데 소모되는 비용
-const cost = Array.from({ length: GRID_HEIGHT }, () =>
+const weight = Array.from({ length: GRID_HEIGHT }, () =>
     Array.from(
         { length: GRID_WIDTH },
         () => Math.floor(Math.random() * 20) + 1,
     ),
 );
+let weighted = true;
 
 // A* is just dijkstra with f(n)
 /**
@@ -123,7 +124,8 @@ function aStar(start, goal) {
             if (nx < 0 || ny < 0 || nx >= GRID_WIDTH || ny >= GRID_HEIGHT)
                 continue;
 
-            const gNext = g[curr.pos.y][curr.pos.x] + cost[ny][nx];
+            const gNext =
+                g[curr.pos.y][curr.pos.x] + (weighted ? weight[ny][nx] : 1);
 
             if (gNext < g[ny][nx]) {
                 g[ny][nx] = gNext;
@@ -188,7 +190,7 @@ function dijkstra(start, goal) {
             if (nx < 0 || ny < 0 || nx >= GRID_WIDTH || ny >= GRID_HEIGHT)
                 continue;
 
-            const gNext = curr.g + cost[ny][nx];
+            const gNext = curr.g + (weighted ? weight[ny][nx] : 1);
 
             if (gNext < g[ny][nx]) {
                 g[ny][nx] = gNext;
@@ -202,11 +204,29 @@ function dijkstra(start, goal) {
     return { path: null, cost: -1 };
 }
 
+function regenerateWeight() {
+    for (let i = 0; i < GRID_HEIGHT; i++) {
+        for (let j = 0; j < GRID_WIDTH; j++)
+            weight[i][j] = Math.floor(Math.random() * 20) + 1;
+    }
+}
+
+function toggleWeight() {
+    weighted = !weighted;
+
+    for (let i = 0; i < GRID_HEIGHT; i++) {
+        for (let j = 0; j < GRID_WIDTH; j++)
+            grid[i][j].classList.toggle("weighted");
+    }
+}
+
 const table = document.querySelector("table");
 const grid = Array.from({ length: GRID_HEIGHT }, () => new Array(GRID_WIDTH));
 const astarButton = document.querySelector("#astar"),
     dijkstraButton = document.querySelector("#dijkstra"),
-    resetButton = document.querySelector("#reset");
+    resetButton = document.querySelector("#reset"),
+    regenerateButton = document.querySelector("#regen-weight"),
+    toggleButton = document.querySelector("#toggle-weight");
 
 const buttons = [astarButton, dijkstraButton, resetButton];
 
@@ -223,7 +243,8 @@ for (let i = 0; i < GRID_HEIGHT; i++) {
 
     for (let j = 0; j < GRID_WIDTH; j++) {
         const cell = document.createElement("td");
-        cell.textContent = String(cost[i][j]);
+        cell.textContent = String(weight[i][j]);
+        cell.classList.add("weighted");
         row.appendChild(cell);
 
         grid[i][j] = cell;
@@ -282,6 +303,9 @@ resetButton.addEventListener("click", () => {
         for (let j = 0; j < GRID_WIDTH; j++)
             grid[i][j].classList.remove("path", "visited");
 });
+
+regenerateButton.addEventListener("click", regenerateWeight);
+toggleButton.addEventListener("click", toggleWeight);
 
 // For testing
 export default {
