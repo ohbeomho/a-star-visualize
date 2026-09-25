@@ -17,6 +17,10 @@
                 border: 1px solid black;
             }
 
+            td.visited {
+                background-color: #d3d3d3;
+            }
+
             td.path {
                 background-color: black;
                 color: white;
@@ -34,7 +38,9 @@
     <body>
         <table></table>
         <p>
-            <button id="run">Run A*</button> <button id="reset">Reset</button>
+            <button id="astar">Run A*</button>
+            <button id="dijkstra">Run Dijkstra</button>
+            <button id="reset">Reset</button>
         </p>
         <p>Cost of the path: <span id="cost"></span></p>
     </body>

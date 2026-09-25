@@ -70,16 +70,17 @@ const cost = Array.from({ length: GRID_HEIGHT }, () =>
     ),
 );
 
+// A* is just dijkstra with f(n)
 /**
  * @param {Position} start
  * @param {Position} goal
- * @returns {{path: Position[], cost: number}}
+ * @returns {{ path: Position[] | null, cost: number }}
  */
 function aStar(start, goal) {
     // 시작 위치에서 특정 위치로 가는 데 가장 비용이 적게 드는 경로의 비용 기록 (Closed set)
     /** @type {number[][]} */
     const g = Array.from({ length: GRID_HEIGHT }, () =>
-        new Array(GRID_WIDTH).fill(1e9),
+        new Array(GRID_WIDTH).fill(Infinity),
     );
     g[start.y][start.x] = 0;
 
@@ -110,6 +111,8 @@ function aStar(start, goal) {
     while (!openSet.isEmpty) {
         const curr = openSet.pop();
 
+        grid[curr.pos.y][curr.pos.x].classList.add("visited");
+
         if (curr.pos.x === goal.x && curr.pos.y === goal.y)
             return { path: getPath(curr.pos), cost: g[goal.y][goal.x] };
 
@@ -137,12 +140,75 @@ function aStar(start, goal) {
     return { path: null, cost: -1 };
 }
 
+/**
+ * @param {Position} start
+ * @param {Position} goal
+ * @returns {{ path: Position[] | null, cost: number }}
+ */
+function dijkstra(start, goal) {
+    const g = Array.from({ length: GRID_HEIGHT }, () =>
+        new Array(GRID_WIDTH).fill(Infinity),
+    );
+    g[start.y][start.x] = 0;
+
+    const openSet = new PriorityQueue((a, b) => a.g - b.g);
+    openSet.push({ g: g[start.y][start.x], pos: start });
+
+    const parent = new Map();
+    const getKey = (pos) => pos.x * 10000 + pos.y;
+    const getPath = (pos) => {
+        const path = [];
+        let curr = pos,
+            currKey = getKey(curr);
+
+        while (true) {
+            path.push(curr);
+            curr = parent.get(currKey);
+
+            if (!curr) break;
+
+            currKey = getKey(curr);
+        }
+
+        return path.toReversed();
+    };
+
+    while (!openSet.isEmpty) {
+        const curr = openSet.pop();
+
+        grid[curr.pos.y][curr.pos.x].classList.add("visited");
+
+        if (curr.pos.x === goal.x && curr.pos.y === goal.y)
+            return { path: getPath(curr.pos), cost: g[goal.y][goal.x] };
+
+        for (let i = 0; i < 4; i++) {
+            const nx = curr.pos.x + dx[i],
+                ny = curr.pos.y + dy[i];
+
+            if (nx < 0 || ny < 0 || nx >= GRID_WIDTH || ny >= GRID_HEIGHT)
+                continue;
+
+            const gNext = curr.g + cost[ny][nx];
+
+            if (gNext < g[ny][nx]) {
+                g[ny][nx] = gNext;
+                parent.set(getKey({ x: nx, y: ny }), curr.pos);
+
+                openSet.push({ g: gNext, pos: { x: nx, y: ny } });
+            }
+        }
+    }
+
+    return { path: null, cost: -1 };
+}
+
 const table = document.querySelector("table");
 const grid = Array.from({ length: GRID_HEIGHT }, () => new Array(GRID_WIDTH));
-const runButton = document.querySelector("#run"),
+const astarButton = document.querySelector("#astar"),
+    dijkstraButton = document.querySelector("#dijkstra"),
     resetButton = document.querySelector("#reset");
 
-const buttons = [runButton, resetButton];
+const buttons = [astarButton, dijkstraButton, resetButton];
 
 function disableButtons() {
     buttons.forEach((button) => (button.disabled = true));
@@ -169,8 +235,13 @@ for (let i = 0; i < GRID_HEIGHT; i++) {
 grid[start.y][start.x].classList.add("start");
 grid[goal.y][goal.x].classList.add("goal");
 
-runButton.addEventListener("click", () => {
+astarButton.addEventListener("click", () => {
     const { path, cost: minCost } = aStar(start, goal);
+
+    if (!path) {
+        alert("No path found");
+        return;
+    }
 
     document.querySelector("#cost").textContent = String(minCost);
 
@@ -184,10 +255,32 @@ runButton.addEventListener("click", () => {
 
     setTimeout(enableButtons, (path.length + 1) * 20);
 });
+
+dijkstraButton.addEventListener("click", () => {
+    const { path, cost: minCost } = dijkstra(start, goal);
+
+    if (!path) {
+        alert("No path found");
+        return;
+    }
+
+    document.querySelector("#cost").textContent = String(minCost);
+
+    disableButtons();
+
+    for (let i = 0; i < path.length; i++)
+        setTimeout(
+            () => grid[path[i].y][path[i].x].classList.add("path"),
+            (i + 1) * 20,
+        );
+
+    setTimeout(enableButtons, (path.length + 1) * 20);
+});
+
 resetButton.addEventListener("click", () => {
     for (let i = 0; i < GRID_HEIGHT; i++)
         for (let j = 0; j < GRID_WIDTH; j++)
-            grid[i][j].classList.remove("path");
+            grid[i][j].classList.remove("path", "visited");
 });
 
 // For testing
