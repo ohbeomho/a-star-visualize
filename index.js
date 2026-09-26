@@ -206,8 +206,10 @@ function dijkstra(start, goal) {
 
 function regenerateWeight() {
     for (let i = 0; i < GRID_HEIGHT; i++) {
-        for (let j = 0; j < GRID_WIDTH; j++)
+        for (let j = 0; j < GRID_WIDTH; j++) {
             weight[i][j] = Math.floor(Math.random() * 20) + 1;
+            grid[i][j].textContent = String(weight[i][j]);
+        }
     }
 }
 
