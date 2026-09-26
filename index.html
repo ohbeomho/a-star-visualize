@@ -16,6 +16,7 @@
                 text-align: center;
                 border: 1px solid black;
                 color: transparent;
+                user-select: none;
             }
 
             td.weighted {
@@ -41,6 +42,10 @@
             td.goal {
                 background-color: #a69c16;
             }
+
+            td.wall {
+                background-color: gray !important;
+            }
         </style>
     </head>
     <body>
@@ -48,7 +53,8 @@
         <p>
             <button id="astar">Run A*</button>
             <button id="dijkstra">Run Dijkstra</button>
-            <button id="reset">Reset</button>
+            <button id="reset">Clear path</button>
+            <button id="reset-all">Reset</button>
         </p>
         <p>
             <button id="toggle-weight">Toggle Weight</button>

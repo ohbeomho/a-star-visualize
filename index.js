@@ -55,6 +55,9 @@ function manhattan(a, b) {
 
 const GRID_WIDTH = 30,
     GRID_HEIGHT = 30;
+// When using A* in grid, there could be many paths with same f(n).
+// This is small multiplier to break ties in favor of shorter paths.
+const p = 1 / (GRID_WIDTH + GRID_HEIGHT);
 
 const dx = [-1, 1, 0, 0],
     dy = [0, 0, -1, 1];
@@ -62,7 +65,6 @@ const dx = [-1, 1, 0, 0],
 const start = { x: 0, y: 0 },
     goal = { x: GRID_WIDTH - 1, y: GRID_HEIGHT - 1 };
 
-// 근처 위치에서 특정 위치로 가는 데 소모되는 비용
 const weight = Array.from({ length: GRID_HEIGHT }, () =>
     Array.from(
         { length: GRID_WIDTH },
@@ -78,7 +80,6 @@ let weighted = true;
  * @returns {{ path: Position[] | null, cost: number }}
  */
 function aStar(start, goal) {
-    // 시작 위치에서 특정 위치로 가는 데 가장 비용이 적게 드는 경로의 비용 기록 (Closed set)
     /** @type {number[][]} */
     const g = Array.from({ length: GRID_HEIGHT }, () =>
         new Array(GRID_WIDTH).fill(Infinity),
@@ -86,7 +87,6 @@ function aStar(start, goal) {
     g[start.y][start.x] = 0;
 
     /** @type {OpenSet} */
-    // 비용이 계산 될 노드들 (f(n) 기준으로 정렬)
     const openSet = new PriorityQueue((a, b) => a.f - b.f);
     openSet.push({ f: 0, pos: start });
 
@@ -121,7 +121,13 @@ function aStar(start, goal) {
             const nx = curr.pos.x + dx[i],
                 ny = curr.pos.y + dy[i];
 
-            if (nx < 0 || ny < 0 || nx >= GRID_WIDTH || ny >= GRID_HEIGHT)
+            if (
+                nx < 0 ||
+                ny < 0 ||
+                nx >= GRID_WIDTH ||
+                ny >= GRID_HEIGHT ||
+                grid[ny][nx].classList.contains("wall")
+            )
                 continue;
 
             const gNext =
@@ -132,7 +138,7 @@ function aStar(start, goal) {
                 parent.set(getKey({ x: nx, y: ny }), curr.pos);
 
                 openSet.push({
-                    f: gNext + manhattan({ x: nx, y: ny }, goal),
+                    f: gNext + manhattan({ x: nx, y: ny }, goal) * (1 + p),
                     pos: { x: nx, y: ny },
                 });
             }
@@ -187,7 +193,13 @@ function dijkstra(start, goal) {
             const nx = curr.pos.x + dx[i],
                 ny = curr.pos.y + dy[i];
 
-            if (nx < 0 || ny < 0 || nx >= GRID_WIDTH || ny >= GRID_HEIGHT)
+            if (
+                nx < 0 ||
+                ny < 0 ||
+                nx >= GRID_WIDTH ||
+                ny >= GRID_HEIGHT ||
+                grid[ny][nx].classList.contains("wall")
+            )
                 continue;
 
             const gNext = curr.g + (weighted ? weight[ny][nx] : 1);
@@ -204,33 +216,23 @@ function dijkstra(start, goal) {
     return { path: null, cost: -1 };
 }
 
-function regenerateWeight() {
-    for (let i = 0; i < GRID_HEIGHT; i++) {
-        for (let j = 0; j < GRID_WIDTH; j++) {
-            weight[i][j] = Math.floor(Math.random() * 20) + 1;
-            grid[i][j].textContent = String(weight[i][j]);
-        }
-    }
-}
-
-function toggleWeight() {
-    weighted = !weighted;
-
-    for (let i = 0; i < GRID_HEIGHT; i++) {
-        for (let j = 0; j < GRID_WIDTH; j++)
-            grid[i][j].classList.toggle("weighted");
-    }
-}
-
 const table = document.querySelector("table");
 const grid = Array.from({ length: GRID_HEIGHT }, () => new Array(GRID_WIDTH));
 const astarButton = document.querySelector("#astar"),
     dijkstraButton = document.querySelector("#dijkstra"),
     resetButton = document.querySelector("#reset"),
+    resetAllButton = document.querySelector("#reset-all"),
     regenerateButton = document.querySelector("#regen-weight"),
     toggleButton = document.querySelector("#toggle-weight");
 
-const buttons = [astarButton, dijkstraButton, resetButton];
+const buttons = [
+    astarButton,
+    dijkstraButton,
+    resetButton,
+    resetAllButton,
+    regenerateButton,
+    toggleButton,
+];
 
 function disableButtons() {
     buttons.forEach((button) => (button.disabled = true));
@@ -240,6 +242,64 @@ function enableButtons() {
     buttons.forEach((button) => (button.disabled = false));
 }
 
+/**
+ * @param {boolean | undefined} removeWall
+ */
+function resetGrid(removeWall) {
+    const removeClasses = ["path", "visited"];
+    if (removeWall) removeClasses.push("wall");
+
+    for (let i = 0; i < GRID_HEIGHT; i++)
+        for (let j = 0; j < GRID_WIDTH; j++)
+            grid[i][j].classList.remove(...removeClasses);
+}
+
+function regenerateWeight() {
+    resetGrid();
+
+    for (let i = 0; i < GRID_HEIGHT; i++) {
+        for (let j = 0; j < GRID_WIDTH; j++) {
+            weight[i][j] = Math.floor(Math.random() * 20) + 1;
+            grid[i][j].textContent = String(weight[i][j]);
+        }
+    }
+}
+
+function toggleWeight() {
+    resetGrid();
+
+    weighted = !weighted;
+
+    for (let i = 0; i < GRID_HEIGHT; i++) {
+        for (let j = 0; j < GRID_WIDTH; j++)
+            grid[i][j].classList.toggle("weighted");
+    }
+}
+
+/**
+ * @param {"dijkstra" | "astar"} type
+ */
+function findPath(type) {
+    if (type !== "dijkstra" && type !== "astar") return;
+
+    resetGrid();
+
+    const pathFindingFunc = type === "dijkstra" ? dijkstra : aStar;
+    const { path, cost: minCost } = pathFindingFunc(start, goal);
+
+    document.querySelector("#cost").textContent = String(minCost);
+
+    disableButtons();
+
+    for (let i = 0; i < path.length; i++)
+        setTimeout(
+            () => grid[path[i].y][path[i].x].classList.add("path"),
+            (i + 1) * 20,
+        );
+
+    setTimeout(enableButtons, (path.length + 1) * 20);
+}
+
 for (let i = 0; i < GRID_HEIGHT; i++) {
     const row = document.createElement("tr");
 
@@ -247,6 +307,7 @@ for (let i = 0; i < GRID_HEIGHT; i++) {
         const cell = document.createElement("td");
         cell.textContent = String(weight[i][j]);
         cell.classList.add("weighted");
+        cell.addEventListener("click", () => cell.classList.toggle("wall"));
         row.appendChild(cell);
 
         grid[i][j] = cell;
@@ -258,53 +319,11 @@ for (let i = 0; i < GRID_HEIGHT; i++) {
 grid[start.y][start.x].classList.add("start");
 grid[goal.y][goal.x].classList.add("goal");
 
-astarButton.addEventListener("click", () => {
-    const { path, cost: minCost } = aStar(start, goal);
+astarButton.addEventListener("click", () => findPath("astar"));
+dijkstraButton.addEventListener("click", () => findPath("dijkstra"));
 
-    if (!path) {
-        alert("No path found");
-        return;
-    }
-
-    document.querySelector("#cost").textContent = String(minCost);
-
-    disableButtons();
-
-    for (let i = 0; i < path.length; i++)
-        setTimeout(
-            () => grid[path[i].y][path[i].x].classList.add("path"),
-            (i + 1) * 20,
-        );
-
-    setTimeout(enableButtons, (path.length + 1) * 20);
-});
-
-dijkstraButton.addEventListener("click", () => {
-    const { path, cost: minCost } = dijkstra(start, goal);
-
-    if (!path) {
-        alert("No path found");
-        return;
-    }
-
-    document.querySelector("#cost").textContent = String(minCost);
-
-    disableButtons();
-
-    for (let i = 0; i < path.length; i++)
-        setTimeout(
-            () => grid[path[i].y][path[i].x].classList.add("path"),
-            (i + 1) * 20,
-        );
-
-    setTimeout(enableButtons, (path.length + 1) * 20);
-});
-
-resetButton.addEventListener("click", () => {
-    for (let i = 0; i < GRID_HEIGHT; i++)
-        for (let j = 0; j < GRID_WIDTH; j++)
-            grid[i][j].classList.remove("path", "visited");
-});
+resetButton.addEventListener("click", () => resetGrid());
+resetAllButton.addEventListener("click", () => resetGrid(true));
 
 regenerateButton.addEventListener("click", regenerateWeight);
 toggleButton.addEventListener("click", toggleWeight);
@@ -312,4 +331,5 @@ toggleButton.addEventListener("click", toggleWeight);
 // For testing
 export default {
     aStar,
+    dijkstra,
 };
