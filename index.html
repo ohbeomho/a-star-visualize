@@ -46,10 +46,18 @@
             td.wall {
                 background-color: gray !important;
             }
+
+            #mode {
+                text-transform: capitalize;
+            }
         </style>
     </head>
     <body>
         <table></table>
+        <p>
+            Click mode: <span id="mode">add</span> wall
+            <button id="change-mode">Change mode</button>
+        </p>
         <p>
             <button id="astar">Run A*</button>
             <button id="dijkstra">Run Dijkstra</button>

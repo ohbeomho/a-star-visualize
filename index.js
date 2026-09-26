@@ -216,24 +216,6 @@ function dijkstra(start, goal) {
     return { path: null, cost: -1 };
 }
 
-const table = document.querySelector("table");
-const grid = Array.from({ length: GRID_HEIGHT }, () => new Array(GRID_WIDTH));
-const astarButton = document.querySelector("#astar"),
-    dijkstraButton = document.querySelector("#dijkstra"),
-    resetButton = document.querySelector("#reset"),
-    resetAllButton = document.querySelector("#reset-all"),
-    regenerateButton = document.querySelector("#regen-weight"),
-    toggleButton = document.querySelector("#toggle-weight");
-
-const buttons = [
-    astarButton,
-    dijkstraButton,
-    resetButton,
-    resetAllButton,
-    regenerateButton,
-    toggleButton,
-];
-
 function disableButtons() {
     buttons.forEach((button) => (button.disabled = true));
 }
@@ -287,6 +269,11 @@ function findPath(type) {
     const pathFindingFunc = type === "dijkstra" ? dijkstra : aStar;
     const { path, cost: minCost } = pathFindingFunc(start, goal);
 
+    if (!path) {
+        alert("No path found.");
+        return;
+    }
+
     document.querySelector("#cost").textContent = String(minCost);
 
     disableButtons();
@@ -300,6 +287,27 @@ function findPath(type) {
     setTimeout(enableButtons, (path.length + 1) * 20);
 }
 
+const table = document.querySelector("table");
+const grid = Array.from({ length: GRID_HEIGHT }, () => new Array(GRID_WIDTH));
+const modeDisplay = document.querySelector("#mode");
+const astarButton = document.querySelector("#astar"),
+    dijkstraButton = document.querySelector("#dijkstra"),
+    resetButton = document.querySelector("#reset"),
+    resetAllButton = document.querySelector("#reset-all"),
+    regenerateButton = document.querySelector("#regen-weight"),
+    toggleButton = document.querySelector("#toggle-weight"),
+    changeModeButton = document.querySelector("#change-mode");
+
+const buttons = [
+    astarButton,
+    dijkstraButton,
+    resetButton,
+    resetAllButton,
+    regenerateButton,
+    toggleButton,
+    changeModeButton,
+];
+
 for (let i = 0; i < GRID_HEIGHT; i++) {
     const row = document.createElement("tr");
 
@@ -307,7 +315,9 @@ for (let i = 0; i < GRID_HEIGHT; i++) {
         const cell = document.createElement("td");
         cell.textContent = String(weight[i][j]);
         cell.classList.add("weighted");
-        cell.addEventListener("click", () => cell.classList.toggle("wall"));
+        const wallChange = () => cell.classList[mode]("wall");
+        cell.addEventListener("mousedown", wallChange);
+        cell.addEventListener("mouseenter", () => mousedown && wallChange());
         row.appendChild(cell);
 
         grid[i][j] = cell;
@@ -327,6 +337,16 @@ resetAllButton.addEventListener("click", () => resetGrid(true));
 
 regenerateButton.addEventListener("click", regenerateWeight);
 toggleButton.addEventListener("click", toggleWeight);
+
+let mousedown = false;
+window.addEventListener("mousedown", () => (mousedown = true));
+window.addEventListener("mouseup", () => (mousedown = false));
+
+let mode = "add";
+changeModeButton.addEventListener("click", () => {
+    mode = mode === "add" ? "remove" : "add";
+    modeDisplay.textContent = mode;
+});
 
 // For testing
 export default {
