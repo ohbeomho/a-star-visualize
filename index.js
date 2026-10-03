@@ -53,26 +53,6 @@ function manhattan(a, b) {
     return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 }
 
-const GRID_WIDTH = 30,
-    GRID_HEIGHT = 30;
-// When using A* in grid, there could be many paths with same f(n).
-// This is small multiplier to break ties in favor of shorter paths.
-const p = 1 / (GRID_WIDTH + GRID_HEIGHT);
-
-const dx = [-1, 1, 0, 0],
-    dy = [0, 0, -1, 1];
-
-const start = { x: 0, y: 0 },
-    goal = { x: GRID_WIDTH - 1, y: GRID_HEIGHT - 1 };
-
-const weight = Array.from({ length: GRID_HEIGHT }, () =>
-    Array.from(
-        { length: GRID_WIDTH },
-        () => Math.floor(Math.random() * 20) + 1,
-    ),
-);
-let weighted = true;
-
 // A* is just dijkstra with f(n)
 /**
  * @param {Position} start
@@ -81,8 +61,8 @@ let weighted = true;
  */
 function aStar(start, goal) {
     /** @type {number[][]} */
-    const g = Array.from({ length: GRID_HEIGHT }, () =>
-        new Array(GRID_WIDTH).fill(Infinity),
+    const g = Array.from({ length: gridHeight }, () =>
+        new Array(gridWidth).fill(Infinity),
     );
     g[start.y][start.x] = 0;
 
@@ -124,8 +104,8 @@ function aStar(start, goal) {
             if (
                 nx < 0 ||
                 ny < 0 ||
-                nx >= GRID_WIDTH ||
-                ny >= GRID_HEIGHT ||
+                nx >= gridWidth ||
+                ny >= gridHeight ||
                 grid[ny][nx].classList.contains("wall")
             )
                 continue;
@@ -154,8 +134,8 @@ function aStar(start, goal) {
  * @returns {{ path: Position[] | null, cost: number }}
  */
 function dijkstra(start, goal) {
-    const g = Array.from({ length: GRID_HEIGHT }, () =>
-        new Array(GRID_WIDTH).fill(Infinity),
+    const g = Array.from({ length: gridHeight }, () =>
+        new Array(gridWidth).fill(Infinity),
     );
     g[start.y][start.x] = 0;
 
@@ -196,8 +176,8 @@ function dijkstra(start, goal) {
             if (
                 nx < 0 ||
                 ny < 0 ||
-                nx >= GRID_WIDTH ||
-                ny >= GRID_HEIGHT ||
+                nx >= gridWidth ||
+                ny >= gridHeight ||
                 grid[ny][nx].classList.contains("wall")
             )
                 continue;
@@ -231,16 +211,27 @@ function resetGrid(removeWall) {
     const removeClasses = ["path", "visited"];
     if (removeWall) removeClasses.push("wall");
 
-    for (let i = 0; i < GRID_HEIGHT; i++)
-        for (let j = 0; j < GRID_WIDTH; j++)
+    for (let i = 0; i < gridHeight; i++)
+        for (let j = 0; j < gridWidth; j++)
             grid[i][j].classList.remove(...removeClasses);
+
+    costDisplay.textContent = "";
+}
+
+function generateWeight() {
+    weight = Array.from({ length: gridHeight }, () =>
+        Array.from(
+            { length: gridWidth },
+            () => Math.floor(Math.random() * 20) + 1,
+        ),
+    );
 }
 
 function regenerateWeight() {
     resetGrid();
 
-    for (let i = 0; i < GRID_HEIGHT; i++) {
-        for (let j = 0; j < GRID_WIDTH; j++) {
+    for (let i = 0; i < gridHeight; i++) {
+        for (let j = 0; j < gridWidth; j++) {
             weight[i][j] = Math.floor(Math.random() * 20) + 1;
             grid[i][j].textContent = String(weight[i][j]);
         }
@@ -252,8 +243,8 @@ function toggleWeight() {
 
     weighted = !weighted;
 
-    for (let i = 0; i < GRID_HEIGHT; i++) {
-        for (let j = 0; j < GRID_WIDTH; j++)
+    for (let i = 0; i < gridHeight; i++) {
+        for (let j = 0; j < gridWidth; j++)
             grid[i][j].classList.toggle("weighted");
     }
 }
@@ -274,7 +265,7 @@ function findPath(type) {
         return;
     }
 
-    document.querySelector("#cost").textContent = String(minCost);
+    costDisplay.textContent = String(minCost);
 
     disableButtons();
 
@@ -287,16 +278,53 @@ function findPath(type) {
     setTimeout(enableButtons, (path.length + 1) * 20);
 }
 
+function createGrid() {
+    table.innerHTML = "";
+    generateWeight();
+    grid = Array.from({ length: gridHeight }, () => new Array(gridWidth));
+    goal = { x: gridWidth - 1, y: gridHeight - 1 };
+
+    // When using A* in grid, there could be many paths with same f(n).
+    // This is small multiplier to break ties in favor of shorter paths.
+    p = 1 / (gridWidth + gridHeight);
+
+    for (let i = 0; i < gridHeight; i++) {
+        const row = document.createElement("tr");
+
+        for (let j = 0; j < gridWidth; j++) {
+            const cell = document.createElement("td");
+            cell.textContent = String(weight[i][j]);
+            const wallChange = () => cell.classList[mode]("wall");
+            cell.addEventListener("mousedown", wallChange);
+            cell.addEventListener(
+                "mouseenter",
+                () => mousedown && wallChange(),
+            );
+            row.appendChild(cell);
+
+            grid[i][j] = cell;
+        }
+
+        table.appendChild(row);
+    }
+
+    grid[start.y][start.x].classList.add("start");
+    grid[goal.y][goal.x].classList.add("goal");
+}
+
 const table = document.querySelector("table");
-const grid = Array.from({ length: GRID_HEIGHT }, () => new Array(GRID_WIDTH));
-const modeDisplay = document.querySelector("#mode");
-const astarButton = document.querySelector("#astar"),
-    dijkstraButton = document.querySelector("#dijkstra"),
-    resetButton = document.querySelector("#reset"),
-    resetAllButton = document.querySelector("#reset-all"),
-    regenerateButton = document.querySelector("#regen-weight"),
-    toggleButton = document.querySelector("#toggle-weight"),
-    changeModeButton = document.querySelector("#change-mode");
+let grid;
+const modeDisplay = document.querySelector("#mode"),
+    costDisplay = document.querySelector("#cost");
+const astarButton = document.querySelector("button#astar"),
+    dijkstraButton = document.querySelector("button#dijkstra"),
+    resetButton = document.querySelector("button#reset"),
+    resetAllButton = document.querySelector("button#reset-all"),
+    regenerateButton = document.querySelector("button#regen-weight"),
+    toggleButton = document.querySelector("button#toggle-weight"),
+    changeModeButton = document.querySelector("button#change-mode");
+const widthInput = document.querySelector("input#width"),
+    heightInput = document.querySelector("input#height");
 
 const buttons = [
     astarButton,
@@ -308,26 +336,17 @@ const buttons = [
     changeModeButton,
 ];
 
-for (let i = 0; i < GRID_HEIGHT; i++) {
-    const row = document.createElement("tr");
+let gridWidth, gridHeight;
+let p;
 
-    for (let j = 0; j < GRID_WIDTH; j++) {
-        const cell = document.createElement("td");
-        cell.textContent = String(weight[i][j]);
-        cell.classList.add("weighted");
-        const wallChange = () => cell.classList[mode]("wall");
-        cell.addEventListener("mousedown", wallChange);
-        cell.addEventListener("mouseenter", () => mousedown && wallChange());
-        row.appendChild(cell);
+const dx = [-1, 1, 0, 0],
+    dy = [0, 0, -1, 1];
 
-        grid[i][j] = cell;
-    }
+let start = { x: 0, y: 0 },
+    goal = { x: gridWidth - 1, y: gridHeight - 1 };
 
-    table.appendChild(row);
-}
-
-grid[start.y][start.x].classList.add("start");
-grid[goal.y][goal.x].classList.add("goal");
+let weight;
+let weighted = false;
 
 astarButton.addEventListener("click", () => findPath("astar"));
 dijkstraButton.addEventListener("click", () => findPath("dijkstra"));
@@ -346,6 +365,27 @@ let mode = "add";
 changeModeButton.addEventListener("click", () => {
     mode = mode === "add" ? "remove" : "add";
     modeDisplay.textContent = mode;
+});
+
+widthInput.addEventListener("input", () => {
+    const width = widthInput.valueAsNumber;
+    if (isNaN(width) || width < 1) return;
+
+    gridWidth = Math.floor(width);
+    createGrid();
+});
+heightInput.addEventListener("input", () => {
+    const height = heightInput.valueAsNumber;
+    if (isNaN(height) || height < 1) return;
+
+    gridHeight = Math.floor(height);
+    createGrid();
+});
+
+window.addEventListener("load", () => {
+    gridWidth = widthInput.valueAsNumber;
+    gridHeight = heightInput.valueAsNumber;
+    createGrid();
 });
 
 // For testing

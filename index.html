@@ -8,6 +8,7 @@
         <style>
             table {
                 border-collapse: collapse;
+                user-select: none;
             }
 
             td {
@@ -16,7 +17,6 @@
                 text-align: center;
                 border: 1px solid black;
                 color: transparent;
-                user-select: none;
             }
 
             td.weighted {
@@ -57,6 +57,10 @@
         <p>
             Click mode: <span id="mode">add</span> wall
             <button id="change-mode">Change mode</button>
+        </p>
+        <p>
+            <input type="number" id="width" min="1" value="30" />
+            <input type="number" id="height" min="1" value="30" />
         </p>
         <p>
             <button id="astar">Run A*</button>
