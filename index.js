@@ -53,7 +53,7 @@ function manhattan(a, b) {
     return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 }
 
-// A* is just dijkstra with f(n)
+// A*는 그냥 h(n)만 추가된 다익스트라라고 생각하면 됨
 /**
  * @param {Position} start
  * @param {Position} goal
@@ -62,9 +62,13 @@ function manhattan(a, b) {
 function aStar(start, goal) {
     /** @type {number[][]} */
     const g = Array.from({ length: gridHeight }, () =>
-        new Array(gridWidth).fill(Infinity),
-    );
+            new Array(gridWidth).fill(Infinity),
+        ),
+        f = Array.from({ length: gridHeight }, () =>
+            new Array(gridWidth).fill(Infinity),
+        );
     g[start.y][start.x] = 0;
+    f[start.y][start.x] = 0;
 
     /** @type {OpenSet} */
     const openSet = new PriorityQueue((a, b) => a.f - b.f);
@@ -92,6 +96,9 @@ function aStar(start, goal) {
     while (!openSet.isEmpty) {
         const curr = openSet.pop();
 
+        // 더 싼 비용의 경로가 발견되었으면 건너뛰기
+        if (f[curr.pos.y][curr.pos.x] < curr.f) continue;
+
         grid[curr.pos.y][curr.pos.x].classList.add("visited");
 
         if (curr.pos.x === goal.x && curr.pos.y === goal.y)
@@ -111,14 +118,17 @@ function aStar(start, goal) {
                 continue;
 
             const gNext =
-                g[curr.pos.y][curr.pos.x] + (weighted ? weight[ny][nx] : 1);
+                    g[curr.pos.y][curr.pos.x] + (weighted ? weight[ny][nx] : 1),
+                fNext = gNext + manhattan({ x: nx, y: ny }, goal) * (1 + p);
 
             if (gNext < g[ny][nx]) {
                 g[ny][nx] = gNext;
+                f[ny][nx] = fNext;
+
                 parent.set(getKey({ x: nx, y: ny }), curr.pos);
 
                 openSet.push({
-                    f: gNext + manhattan({ x: nx, y: ny }, goal) * (1 + p),
+                    f: fNext,
                     pos: { x: nx, y: ny },
                 });
             }
@@ -163,6 +173,8 @@ function dijkstra(start, goal) {
 
     while (!openSet.isEmpty) {
         const curr = openSet.pop();
+
+        if (g[curr.pos.y][curr.pos.x] < curr.g) continue;
 
         grid[curr.pos.y][curr.pos.x].classList.add("visited");
 
