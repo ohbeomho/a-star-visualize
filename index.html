@@ -47,17 +47,28 @@
                 background-color: gray !important;
             }
 
-            #mode {
-                text-transform: capitalize;
+            button {
+                border: 1px solid black;
+            }
+
+            #add,
+            #remove {
+                width: 1.5rem;
+                height: 1.5rem;
+            }
+
+            #add.active {
+                background-color: #32a852;
+            }
+
+            #remove.active {
+                background-color: #c41621;
             }
         </style>
     </head>
     <body>
         <table></table>
-        <p>
-            Click mode: <span id="mode">add</span> wall
-            <button id="change-mode">Change mode</button>
-        </p>
+        <p>Wall <button id="add">+</button> <button id="remove">-</button></p>
         <p>
             <input type="number" id="width" min="1" value="30" />
             <input type="number" id="height" min="1" value="30" />

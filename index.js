@@ -294,7 +294,7 @@ function createGrid() {
         for (let j = 0; j < gridWidth; j++) {
             const cell = document.createElement("td");
             cell.textContent = String(weight[i][j]);
-            const wallChange = () => cell.classList[mode]("wall");
+            const wallChange = () => mode && cell.classList[mode]("wall");
             cell.addEventListener("mousedown", wallChange);
             cell.addEventListener(
                 "mouseenter",
@@ -314,15 +314,15 @@ function createGrid() {
 
 const table = document.querySelector("table");
 let grid;
-const modeDisplay = document.querySelector("#mode"),
-    costDisplay = document.querySelector("#cost");
+const costDisplay = document.querySelector("#cost");
 const astarButton = document.querySelector("button#astar"),
     dijkstraButton = document.querySelector("button#dijkstra"),
     resetButton = document.querySelector("button#reset"),
     resetAllButton = document.querySelector("button#reset-all"),
     regenerateButton = document.querySelector("button#regen-weight"),
     toggleButton = document.querySelector("button#toggle-weight"),
-    changeModeButton = document.querySelector("button#change-mode");
+    wallAddButton = document.querySelector("button#add"),
+    wallRemoveButton = document.querySelector("button#remove");
 const widthInput = document.querySelector("input#width"),
     heightInput = document.querySelector("input#height");
 
@@ -333,7 +333,8 @@ const buttons = [
     resetAllButton,
     regenerateButton,
     toggleButton,
-    changeModeButton,
+    wallAddButton,
+    wallRemoveButton,
 ];
 
 let gridWidth, gridHeight;
@@ -361,10 +362,28 @@ let mousedown = false;
 window.addEventListener("mousedown", () => (mousedown = true));
 window.addEventListener("mouseup", () => (mousedown = false));
 
-let mode = "add";
-changeModeButton.addEventListener("click", () => {
-    mode = mode === "add" ? "remove" : "add";
-    modeDisplay.textContent = mode;
+let mode = null;
+wallAddButton.addEventListener("click", () => {
+    if (mode === "add") {
+        mode = null;
+        wallAddButton.classList.remove("active");
+        return;
+    }
+
+    mode = "add";
+    wallAddButton.classList.add("active");
+    wallRemoveButton.classList.remove("active");
+});
+wallRemoveButton.addEventListener("click", () => {
+    if (mode === "remove") {
+        mode = null;
+        wallRemoveButton.classList.remove("active");
+        return;
+    }
+
+    mode = "remove";
+    wallRemoveButton.classList.add("active");
+    wallAddButton.classList.remove("active");
 });
 
 widthInput.addEventListener("input", () => {
